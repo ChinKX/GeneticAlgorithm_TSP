@@ -53,10 +53,16 @@ class Fitness:
     
 def genCityList(filename):
     cityList = []
-
+    #TODO - implement this function by replacing the code between the TODO lines
+    '''
+    for i in range(0,12):
+        cityList.append(City(x=int(random.random() * 200),
+                             y=int(random.random() * 200)))
+    '''
     data = pd.read_csv(filename, sep=" ", header=None, names=["index", "x", "y"])
     data.set_index('index', inplace=True)
-
+    #print(data)
+    
     for index, row in data.iterrows():
         #access data using column names
         #print(str(row['x']) + " " + str(row['y']))
@@ -91,18 +97,12 @@ def parentSelection(population, poolSize=None):
     is useful if we are doing survivorSelection as well, otherwise we
     can just set poolSize = len(population).
     """
-    
+    '''
     if poolSize == None:
         poolSize = len(population)
     
     matingPool = []
     
-    #TODO - implement this function by replacing the code between the TODO lines
-    '''
-    for i in range(0, poolSize):
-        fitness = Fitness(population[i]).routeFitness()
-        matingPool.append(random.choice(population))
-    '''
     ###2nd approach - Tournament Selection###
     tournament_size = 0.2 * len(population)
     
@@ -115,6 +115,21 @@ def parentSelection(population, poolSize=None):
         matingPool.append(best)
         
     return matingPool
+    '''
+    if poolSize == None:
+        poolSize = len(population)
+    
+    matingPool = []
+    ###Roulette Wheel
+
+    ###Version 2
+    max = sum(Fitness(p).routeFitness() for p in population)
+    selection_probs = [Fitness(p).routeFitness()/max for p in population]
+    
+    for i in range(0, poolSize):
+        matingPool.append(population[np.random.choice(len(population), p=selection_probs)])
+    
+    return matingPool
 
 def survivorSelection(population, popRanked, eliteSize):
     """
@@ -124,7 +139,6 @@ def survivorSelection(population, popRanked, eliteSize):
     elites = []
     selectionResults = []
     
-    #TODO - implement this function by replacing the code between the TODO lines
     for i in range(eliteSize):
         #selectionResults.append(popRanked[-(i + 1)][0])
         selectionResults.append(popRanked[i][0])
@@ -140,9 +154,9 @@ def survivorSelection(population, popRanked, eliteSize):
     return elites
 
 def crossover(parent1, parent2):
-    child = []
-    childP1 = []
-    childP2 = []
+    ###2nd approach - order-based crossover (OX2)###
+    child1 = [None] * len(parent1)
+    child2 = [None] * len(parent1)
     
     geneA = int(random.random() * len(parent1))
     geneB = int(random.random() * len(parent1))
@@ -151,33 +165,31 @@ def crossover(parent1, parent2):
     endGene = max(geneA, geneB)
 
     for i in range(startGene, endGene + 1):
-        childP1.append(parent1[i])
-    
-    childP2 = [item for item in parent2 if item not in childP1]
-    
-    child = childP1 + childP2
-    
-    return child
+        child1[i] = parent2[i]
+        child2[i] = parent1[i]
+        
+    for i in range(0, startGene):
+        child1[i] = parent1[i]
+        child2[i] = parent2[i]
+        
+    for i in range(endGene + 1, len(parent1)):
+        child1[i] = parent1[i]
+        child2[i] = parent2[i]
+        
+    return child1, child2
     
     #TODO - the code above simply generates new random routes.
     # Replace it with code which implements a suitable crossover method.
 
+
+
 def breedPopulation(matingpool, poolSize):
-    '''
     children = []
     
     for i in range(1, len(matingpool), 2):
         child1, child2 = crossover(matingpool[i-1], matingpool[i])
         children.append(child1)
         children.append(child2)
-    
-    return children
-    '''
-    children = []
-    
-    for i in range(0, poolSize):
-        child = crossover(matingpool[i], matingpool[len(matingpool)-i-1])
-        children.append(child)
         
     return children
 
@@ -186,16 +198,6 @@ def mutate(route, mutationProbability):
     mutationProbability is the probability that any one City instance
     will undergo mutation
     """
-    
-    ###Shuffle mutation
-    portionLen = int(0.01 * len(route))
-
-    idx = random.randint(0, len(route) - portionLen)
-    portion = route[idx : idx + portionLen]
-    route[idx : idx + portionLen] = random.sample(portion, len(portion))    
-    
-    return route        
-    '''
     for swapped in range(len(route)):
         if (random.random() < mutationProbability):
             ###1st approach - swap mutation###
@@ -211,7 +213,6 @@ def mutate(route, mutationProbability):
             # code which implements a better mutation method
     
     return route
-    '''
 
 def mutation(population, mutationProbability):
     mutatedPopulation = []
@@ -243,6 +244,9 @@ def oneGeneration(population, eliteSize, mutationProbability):
     # We combine the elites and children into one population
     new_population = elites + children
     
+    #print(len(elites[0]))
+    #print(len(children[0]))
+    #print(len(new_population[0]))
     # We mutate the population
     mutated_population = mutation(new_population, mutationProbability)
     #SUGGESTION - If we do mutation before selection and breeding, does

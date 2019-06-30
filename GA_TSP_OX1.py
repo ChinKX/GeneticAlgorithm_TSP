@@ -89,9 +89,9 @@ def rankRoutes(population):
         fitnessResults[i] = Fitness(population[i]).routeFitness()
     #return sorted(fitnessResults.items(), key = operator.itemgetter(1), reverse = True)
     # lambda x : x[1] will return the value of an item in the dict
-    return sorted(fitnessResults.items(), key = lambda x : x[1])###Possible Error
+    return sorted(fitnessResults.items(), key = lambda x : x[1], reverse = True)###Possible Error
 
-def parentSelection(population, popRanked, poolSize=None):
+def parentSelection(population, poolSize=None):
     """
     Note that this function returns only poolSize City instances. This
     is useful if we are doing survivorSelection as well, otherwise we
@@ -99,55 +99,34 @@ def parentSelection(population, popRanked, poolSize=None):
     """
     
     if poolSize == None:
-        poolSize = len(popRanked)
+        poolSize = len(population)
     
     matingPool = []
     
-    #TODO - implement this function by replacing the code between the TODO lines
-    '''
-    for i in range(0, poolSize):
-        fitness = Fitness(population[i]).routeFitness()
-        matingPool.append(random.choice(population))
-    '''
-    ###1st approach - Fitness proportionate selection ###
-    df = pd.DataFrame(np.array(popRanked), columns=['Index', "Fitness"])
-    df['cum_sum'] = df.Fitness.cumsum()# calculate the cumulative sum
-    df['cum_perc'] = 100 * df.cum_sum/df.Fitness.sum()# convert the cum_sum to percentage form
-    selectionResults = []
-    #print(df)# to be removed
+    ###2nd approach - Tournament Selection###
+    tournament_size = 0.2 * len(population)
     
     for i in range(0, poolSize):
-        randPerc = 100 * random.random()# generate random percentage
-        for i in range(0, len(popRanked)):
-            # compare the randPerc with generated percentage list
-            # if the randPerc is within a paricular chromosome's cum_perc then the chromosome will be selected and
-            #therefore, the chromosome with higher cum_perc i.e. fitness will have a greater chance to be selected
-            # Note that the chromosome;s index instead of the chromosome will be stored
-            if randPerc <= df.iat[i,3]:###Possible Error
-                selectionResults.append(popRanked[i][0])
-                break
-    
-    #TODO - the code above just randomly selects a parent. Replace
-    # it with code which implements one of the parent selection
-    # strategies mentioned in the lecture.
-    for i in range(0, len(selectionResults)):
-        matingPool.append(population[selectionResults[i]])
-        #print(selectionResults[i])# to be removed
-    
+        randPop = random.sample(population, int(tournament_size))
+        best = randPop[0]
+        for i in range(0, len(randPop)):
+            if Fitness(randPop[i]).routeFitness() > Fitness(best).routeFitness():
+                best = randPop[i]
+        matingPool.append(best)
+        
     return matingPool
 
-def survivorSelection(popRanked, eliteSize):
+def survivorSelection(population, popRanked, eliteSize):
     """
     This function returns a list of length eliteSize (the selected
     City instances which will be preserved)
     """
-    
     elites = []
     selectionResults = []
     
-    #TODO - implement this function by replacing the code between the TODO lines
     for i in range(eliteSize):
-        selectionResults.append(popRanked[-(i + 1)][0])
+        #selectionResults.append(popRanked[-(i + 1)][0])
+        selectionResults.append(popRanked[i][0])
     #TODO - the code above just selects the first eliteSize City instances.
     # Replace it with code which selects the best individuals
     #SUGGESTION - age-based survivor selection isn't trivial to implement
@@ -156,20 +135,12 @@ def survivorSelection(popRanked, eliteSize):
     # required, no bonus marks) for those who find this lab too easy.
     for i in range(0, len(selectionResults)):
         elites.append(population[selectionResults[i]])
-    
+
     return elites
 
 def crossover(parent1, parent2):
-    """
-    You can choose to run this cell or the previous one in order to
-    'select' a crossover method. You can also add more cells.
-    """
-    
-    #TODO - implement this function by replacing the code between the TODO lines
-    '''
-    child1 = createRoute(parent1)
-    child2 = createRoute(parent2)
-    '''
+    #TODO - the code above simply generates new random routes.
+    # Replace it with code which implements a suitable crossover method.
     ###1st approach - Davis’ Order Crossover (OX1)###
     child = [None] * len(parent1)
     
@@ -216,32 +187,20 @@ def crossover(parent1, parent2):
                     child[childCount] = parent2[count]
                     childCount += 1
             count += 1
-    #print(startGene)
-    #print(endGene)
-    print("Parent1:#####################################################################")
-    print(parent1)
-    print("Parent2:#####################################################################")
-    print(parent2)
-    print("child:#####################################################################")
-    print(child)
     
     #TODO - the code above simply generates new random routes.
     # Replace it with code which implements a suitable crossover method.
     
     return child
 
-def breedPopulation(matingpool):
+
+def breedPopulation(matingpool, poolSize):
     children = []
     
-    for i in range(1, len(matingpool), 2):
-        child1 = crossover(matingpool[i-1], matingpool[i])
-        child2 = crossover(matingpool[i], matingpool[i-1])
-        children.append(child1)
-        children.append(child2)
-    #SUGGESTION - would randomly choosing parents from matingpool make
-    # a difference compared to just choosing them in order? Wouldn't be
-    # too hard to test that, would it?
-    
+    for i in range(0, poolSize):
+        child = crossover(matingpool[i-1], matingpool[i])
+        children.append(child)
+        
     return children
 
 def mutate(route, mutationProbability):
@@ -249,31 +208,32 @@ def mutate(route, mutationProbability):
     mutationProbability is the probability that any one City instance
     will undergo mutation
     """
-    mutated_route = route[:]
+    '''
     for swapped in range(len(route)):
         if (random.random() < mutationProbability):
-            #TODO - implement this function by replacing the code between
-            # the TODO lines
-            '''
-            city1 = route[i]
-            city2 = route[i-1]
-            mutated_route[i] = city2
-            mutated_route[i-1] = city1
-            '''
             ###1st approach - swap mutation###
             swapWith = random.randint(0, len(route) - 1)
             
             city1 = route[swapped]
             city2 = route[swapWith]
-            mutated_route[swapped] = city2
-            mutated_route[swapWith] = city1
+            route[swapped] = city2
+            route[swapWith] = city1
             
             #TODO - the code above simply swaps a city with the city
             # before it. This isn't really a good idea, replace it with
             # code which implements a better mutation method
     
-    return mutated_route
+    return route
+    '''
+    ###Shuffle mutation
+    portionLen = int(0.02 * len(route))
 
+    idx = random.randint(0, len(route) - portionLen)
+    portion = route[idx : idx + portionLen]
+    route[idx : idx + portionLen] = random.sample(portion, len(portion))    
+    
+    return route
+    
 def mutation(population, mutationProbability):
     mutatedPopulation = []
     for i in range(0, len(population)):
@@ -287,22 +247,26 @@ def oneGeneration(population, eliteSize, mutationProbability):
     popRanked = rankRoutes(population)
     
     # First we preserve the elites
-    elites = survivorSelection(popRanked, eliteSize)
+    elites = survivorSelection(population, popRanked, eliteSize)
     
     # Then we calculate what our mating pool size should be and generate
     # the mating pool
     poolSize = len(population) - eliteSize
-    matingpool = parentSelection(population, popRanked, poolSize)
+    matingpool = parentSelection(population, poolSize)
+    
     #SUGGESTION - What if the elites were removed from the mating pool?
     # Would that help or hurt the genetic algorithm? How would that affect
     # diversity? How would that affect performance/convergence?
     
     # Then we perform crossover on the mating pool
-    children = breedPopulation(matingpool)
+    children = breedPopulation(matingpool, poolSize)
     
     # We combine the elites and children into one population
     new_population = elites + children
     
+    #print(len(elites[0]))
+    #print(len(children[0]))
+    #print(len(new_population[0]))
     # We mutate the population
     mutated_population = mutation(new_population, mutationProbability)
     #SUGGESTION - If we do mutation before selection and breeding, does
@@ -312,18 +276,34 @@ def oneGeneration(population, eliteSize, mutationProbability):
 
 
 start_time = time.time()
-filename = 'TSPdata/tsp-case03.txt'
+
+filename = 'TSPdata/tsp-case04.txt'
 popSize = 20
 eliteSize = 5
-mutationProbability = 0.01
+mutationProbability = 0.01# not used bcoz we are using shuffle mutation
 iteration_limit = 100
-
+'''
+filename = 'TSPdata/tsp-case04.txt'
+popSize = 20
+eliteSize = 5
+mutationProbability = 0.016
+iteration_limit = 300
+'''
+'''
+filename = 'TSPdata/tsp-case03.txt'
+popSize = 100
+eliteSize = 20
+mutationProbability = 0.022
+iteration_limit = 1200
+'''
 cityList = genCityList(filename)
 
 population = initialPopulation(popSize, cityList)
 distances = [Fitness(p).routeDistance() for p in population]
 min_dist = min(distances)
 print("Best distance for initial population: " + str(min_dist))
+progress = []
+progress.append(1 / rankRoutes(population)[0][1])
 
 for i in range(iteration_limit):
     population = oneGeneration(population, eliteSize, mutationProbability)
@@ -331,6 +311,12 @@ for i in range(iteration_limit):
     min_dist = min(distances)
     print("Best distance for population in iteration " + str(i) +
           ": " + str(min_dist))
+    progress.append(1 / rankRoutes(population)[0][1])
+
+plt.plot(progress)
+plt.ylabel('Distance')
+plt.xlabel('Generation')
+plt.show()
     #TODO - Perhaps we should save the best distance (or the route itself)
     # for plotting? A plot may be better at demonstrating performance over
     # iterations.
@@ -341,7 +327,6 @@ for i in range(iteration_limit):
     # a different stopping criterion (e.g. best fitness no longer
     # improving)?
 
-'''
 end_time = time.time()
 print("Time taken: {} s".format(end_time-start_time))
 
@@ -353,5 +338,3 @@ with open(filename, mode='w') as f:
     writer = csv.writer(f, delimiter=' ', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     for i in range(len(best_route)):
         writer.writerow([i, best_route[i].x, best_route[i].y])
-        
-'''

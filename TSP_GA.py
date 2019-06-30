@@ -203,4 +203,4 @@ for index, row in data.iterrows():
     cityList.append(City(row['x'], row['y'])) 
 
 #geneticAlgorithmPlot(population=cityList, popSize=100, eliteSize=20, mutationRate=0.01, generations=500)
-geneticAlgorithm(population=cityList, popSize=10, eliteSize=2, mutationRate=0.01, generations=5)
+geneticAlgorithmPlot(population=cityList, popSize=20, eliteSize=5, mutationRate=0.01, generations=100)

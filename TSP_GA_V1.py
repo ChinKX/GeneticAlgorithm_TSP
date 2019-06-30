@@ -53,12 +53,7 @@ class Fitness:
     
 def genCityList(filename):
     cityList = []
-    #TODO - implement this function by replacing the code between the TODO lines
-    '''
-    for i in range(0,12):
-        cityList.append(City(x=int(random.random() * 200),
-                             y=int(random.random() * 200)))
-    '''
+
     data = pd.read_csv(filename, sep=" ", header=None, names=["index", "x", "y"])
     data.set_index('index', inplace=True)
     #print(data)
@@ -171,7 +166,7 @@ def crossover(parent1, parent2):
     startGene = min(geneA, geneB)
     endGene = max(geneA, geneB)
 
-    for i in range(startGene, endGene):
+    for i in range(startGene, endGene + 1):
         childP1.append(parent1[i])
         
     childP2 = [item for item in parent2 if item not in childP1]
@@ -185,54 +180,35 @@ def crossover(parent1, parent2):
 def breedPopulation(matingpool, poolSize):
     children = []
     
-    for i in range(1, len(matingpool), 2):
-        child1 = crossover(matingpool[i-1], matingpool[i])
-        child2 = crossover(matingpool[i], matingpool[i-1])
-        children.append(child1)
-        children.append(child2)
-    
-    '''
-    pool = random.sample(matingpool, len(matingpool))
-    
     for i in range(0, poolSize):
-        child = crossover(pool[i], pool[len(matingpool)-i-1])
+        child = crossover(matingpool[i], matingpool[len(matingpool)-i-1])
         children.append(child)
-    '''
+    
+    return children
     #SUGGESTION - would randomly choosing parents from matingpool make
     # a difference compared to just choosing them in order? Wouldn't be
     # too hard to test that, would it?
-    
-    return children
 
 def mutate(route, mutationProbability):
     """
     mutationProbability is the probability that any one City instance
     will undergo mutation
     """
-    mutated_route = route[:]
     for swapped in range(len(route)):
         if (random.random() < mutationProbability):
-            #TODO - implement this function by replacing the code between
-            # the TODO lines
-            '''
-            city1 = route[i]
-            city2 = route[i-1]
-            mutated_route[i] = city2
-            mutated_route[i-1] = city1
-            '''
             ###1st approach - swap mutation###
             swapWith = random.randint(0, len(route) - 1)
             
             city1 = route[swapped]
             city2 = route[swapWith]
-            mutated_route[swapped] = city2
-            mutated_route[swapWith] = city1
+            route[swapped] = city2
+            route[swapWith] = city1
             
             #TODO - the code above simply swaps a city with the city
             # before it. This isn't really a good idea, replace it with
             # code which implements a better mutation method
     
-    return mutated_route
+    return route
 
 def mutation(population, mutationProbability):
     mutatedPopulation = []
@@ -280,10 +256,10 @@ mutationProbability = 0.015
 iteration_limit = 250
 '''
 filename = 'TSPdata/tsp-case03.txt'
-popSize = 100
-eliteSize = 20
-mutationProbability = 0.025
-iteration_limit = 300#1500
+popSize = 20
+eliteSize = 5
+mutationProbability = 0.01
+iteration_limit = 100
 
 cityList = genCityList(filename)
 
