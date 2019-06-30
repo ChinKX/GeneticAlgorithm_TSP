@@ -119,7 +119,7 @@ def parentSelection(population, poolSize=None):
             if Fitness(randPop[i]).routeFitness() > Fitness(best).routeFitness():
                 best = randPop[i]
         matingPool.append(best)
-    
+
     return matingPool
 
 def survivorSelection(population, popRanked, eliteSize):
@@ -127,7 +127,6 @@ def survivorSelection(population, popRanked, eliteSize):
     This function returns a list of length eliteSize (the selected
     City instances which will be preserved)
     """
-    
     elites = []
     selectionResults = []
     
@@ -143,11 +142,10 @@ def survivorSelection(population, popRanked, eliteSize):
     # required, no bonus marks) for those who find this lab too easy.
     for i in range(0, len(selectionResults)):
         elites.append(population[selectionResults[i]])
-    
+
     return elites
 
 def crossover(parent1, parent2):
-    
     '''
     child1 = [None] * len(parent1)
     child2 = [None] * len(parent1)
@@ -176,6 +174,8 @@ def crossover(parent1, parent2):
     childP1 = []
     childP2 = []
     
+    #print("Parent 1: " + str(len(parent1)))
+    #print("Parent 2: " + str(len(parent2)))
     geneA = int(random.random() * len(parent1))
     geneB = int(random.random() * len(parent1))
     
@@ -184,10 +184,11 @@ def crossover(parent1, parent2):
 
     for i in range(startGene, endGene):
         childP1.append(parent1[i])
-        
+    
     childP2 = [item for item in parent2 if item not in childP1]
-
+    
     child = childP1 + childP2
+    
     return child
     
     #TODO - the code above simply generates new random routes.
@@ -206,12 +207,10 @@ def breedPopulation(matingpool, poolSize):
     '''
     children = []
     
-    for i in range(1, len(matingpool), 2):
-        child1 = crossover(matingpool[i-1], matingpool[i])
-        child2 = crossover(matingpool[i], matingpool[i-1])
-        children.append(child1)
-        children.append(child2)
-    
+    for i in range(0, poolSize):
+        child = crossover(matingpool[i], matingpool[len(matingpool)-i-1])
+        children.append(child)
+        
     return children
 
 def mutate(route, mutationProbability):
@@ -231,7 +230,7 @@ def mutate(route, mutationProbability):
             mutated_route[i-1] = city1
             '''
             ###1st approach - swap mutation###
-            swapWith = random.randint(0, len(route) - 1)
+            swapWith = int(random.random() * len(route))
             
             city1 = route[swapped]
             city2 = route[swapWith]
@@ -258,36 +257,54 @@ def oneGeneration(population, eliteSize, mutationProbability):
     
     # First we preserve the elites
     elites = survivorSelection(population, popRanked, eliteSize)
+    print(len(elites[-1]))
     
     # Then we calculate what our mating pool size should be and generate
     # the mating pool
     poolSize = len(population) - eliteSize
     matingpool = parentSelection(population, poolSize)
+    print(len(matingpool[-1]))
+    
     #SUGGESTION - What if the elites were removed from the mating pool?
     # Would that help or hurt the genetic algorithm? How would that affect
     # diversity? How would that affect performance/convergence?
-
+    
     # Then we perform crossover on the mating pool
     children = breedPopulation(matingpool, poolSize)
+    print(len(children[-1]))
     
     # We combine the elites and children into one population
     new_population = elites + children
+    print(len(new_population[-1]))
     
+    #print(len(elites[0]))
+    #print(len(children[0]))
+    #print(len(new_population[0]))
     # We mutate the population
     mutated_population = mutation(new_population, mutationProbability)
     #SUGGESTION - If we do mutation before selection and breeding, does
     # it make any difference?
-    
+    print(len(mutated_population[-1]))
+    print("\n")
+    print("\n")
+
     return mutated_population
 
 
 start_time = time.time()
 
-filename = 'TSPdata/tsp-case04.txt'
+filename = 'TSPdata/tsp-case03.txt'
 popSize = 20
 eliteSize = 5
 mutationProbability = 0.01
-iteration_limit = 200
+iteration_limit = 100
+'''
+filename = 'TSPdata/tsp-case04.txt'
+popSize = 20
+eliteSize = 5
+mutationProbability = 0.016
+iteration_limit = 300
+'''
 '''
 filename = 'TSPdata/tsp-case03.txt'
 popSize = 100

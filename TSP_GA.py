@@ -169,6 +169,7 @@ def geneticAlgorithm(population, popSize, eliteSize, mutationRate, generations):
     print("Final distance: " + str(1 / rankRoutes(pop)[0][1]))
     bestRouteIndex = rankRoutes(pop)[0][0]
     bestRoute = pop[bestRouteIndex]
+    print(len(bestRoute))
     return bestRoute
 
 ### Bonus feature: Plot the improvement
@@ -201,4 +202,5 @@ for index, row in data.iterrows():
     #access data using column names
     cityList.append(City(row['x'], row['y'])) 
 
-geneticAlgorithmPlot(population=cityList, popSize=100, eliteSize=20, mutationRate=0.01, generations=500)
+#geneticAlgorithmPlot(population=cityList, popSize=100, eliteSize=20, mutationRate=0.01, generations=500)
+geneticAlgorithm(population=cityList, popSize=10, eliteSize=2, mutationRate=0.01, generations=5)

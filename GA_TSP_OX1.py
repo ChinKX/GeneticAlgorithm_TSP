@@ -89,7 +89,7 @@ def rankRoutes(population):
         fitnessResults[i] = Fitness(population[i]).routeFitness()
     #return sorted(fitnessResults.items(), key = operator.itemgetter(1), reverse = True)
     # lambda x : x[1] will return the value of an item in the dict
-    return sorted(fitnessResults.items(), key = lambda x : x[1], reverse = True)###Possible Error
+    return sorted(fitnessResults.items(), key = lambda x : x[1])###Possible Error
 
 def parentSelection(population, popRanked, poolSize=None):
     """
@@ -136,7 +136,7 @@ def parentSelection(population, popRanked, poolSize=None):
     
     return matingPool
 
-def survivorSelection(population, popRanked, eliteSize):
+def survivorSelection(popRanked, eliteSize):
     """
     This function returns a list of length eliteSize (the selected
     City instances which will be preserved)
@@ -147,8 +147,7 @@ def survivorSelection(population, popRanked, eliteSize):
     
     #TODO - implement this function by replacing the code between the TODO lines
     for i in range(eliteSize):
-        #selectionResults.append(popRanked[-(i + 1)][0])
-        selectionResults.append(popRanked[i][0])
+        selectionResults.append(popRanked[-(i + 1)][0])
     #TODO - the code above just selects the first eliteSize City instances.
     # Replace it with code which selects the best individuals
     #SUGGESTION - age-based survivor selection isn't trivial to implement
@@ -161,28 +160,77 @@ def survivorSelection(population, popRanked, eliteSize):
     return elites
 
 def crossover(parent1, parent2):
-    child = []
-    childP1 = []
-    childP2 = []
+    """
+    You can choose to run this cell or the previous one in order to
+    'select' a crossover method. You can also add more cells.
+    """
     
-    geneA = int(random.random() * len(parent1))
-    geneB = int(random.random() * len(parent1))
+    #TODO - implement this function by replacing the code between the TODO lines
+    '''
+    child1 = createRoute(parent1)
+    child2 = createRoute(parent2)
+    '''
+    ###1st approach - Davis’ Order Crossover (OX1)###
+    child = [None] * len(parent1)
     
-    startGene = min(geneA, geneB)
-    endGene = max(geneA, geneB)
-
-    for i in range(startGene, endGene):
-        childP1.append(parent1[i])
-        
-    childP2 = [item for item in parent2 if item not in childP1]
-
-    child = childP1 + childP2
-    return child
+    # generate a random range within the chromosome
+    gene1 = random.randint(0, len(parent1) - 1)
+    gene2 = random.randint(0, len(parent1) - 1)
+    
+    # check for identical genes i.e. gene1 == gene2
+    while gene1 == gene2:
+        gene1 = random.randint(0, len(parent1) - 1)
+        gene2 = random.randint(0, len(parent1) - 1)
+    
+    # sort the order
+    startGene = min(gene1, gene2)
+    endGene = max(gene1, gene2)
+    
+    # get the slice of the parent 1 chromosome and put into the child
+    for i in range(startGene, endGene + 1):
+        child[i] = parent1[i]
+    
+    # copy remained unused genes from second parent to the child, wrapping around the list
+    count = endGene + 1
+    childCount = endGene + 1
+    isComplete = False
+    while not isComplete:
+        #print(child)# to be removed
+        if count == len(parent1):
+            #print("0")
+            count = 0
+        elif count == endGene:
+            #print("2nd")
+            if None in child:# presence of None indicates the child is not fully filled up with genes yet
+                if childCount == len(child):
+                        childCount = child.index(None)
+                if parent2[count] not in child:
+                    child[childCount] = parent2[count]
+            isComplete = True
+        else:
+            if parent2[count] not in child:# presence of None indicates the child is not fully filled up with genes yet
+                #print("3rd")
+                if None in child:
+                    if childCount == len(child):
+                        childCount = child.index(None)
+                    child[childCount] = parent2[count]
+                    childCount += 1
+            count += 1
+    #print(startGene)
+    #print(endGene)
+    print("Parent1:#####################################################################")
+    print(parent1)
+    print("Parent2:#####################################################################")
+    print(parent2)
+    print("child:#####################################################################")
+    print(child)
     
     #TODO - the code above simply generates new random routes.
     # Replace it with code which implements a suitable crossover method.
+    
+    return child
 
-def breedPopulation(matingpool, poolSize):
+def breedPopulation(matingpool):
     children = []
     
     for i in range(1, len(matingpool), 2):
@@ -190,14 +238,6 @@ def breedPopulation(matingpool, poolSize):
         child2 = crossover(matingpool[i], matingpool[i-1])
         children.append(child1)
         children.append(child2)
-    
-    '''
-    pool = random.sample(matingpool, len(matingpool))
-    
-    for i in range(0, poolSize):
-        child = crossover(pool[i], pool[len(matingpool)-i-1])
-        children.append(child)
-    '''
     #SUGGESTION - would randomly choosing parents from matingpool make
     # a difference compared to just choosing them in order? Wouldn't be
     # too hard to test that, would it?
@@ -247,7 +287,7 @@ def oneGeneration(population, eliteSize, mutationProbability):
     popRanked = rankRoutes(population)
     
     # First we preserve the elites
-    elites = survivorSelection(population, popRanked, eliteSize)
+    elites = survivorSelection(popRanked, eliteSize)
     
     # Then we calculate what our mating pool size should be and generate
     # the mating pool
@@ -256,9 +296,9 @@ def oneGeneration(population, eliteSize, mutationProbability):
     #SUGGESTION - What if the elites were removed from the mating pool?
     # Would that help or hurt the genetic algorithm? How would that affect
     # diversity? How would that affect performance/convergence?
-
+    
     # Then we perform crossover on the mating pool
-    children = breedPopulation(matingpool, poolSize)
+    children = breedPopulation(matingpool)
     
     # We combine the elites and children into one population
     new_population = elites + children
@@ -272,18 +312,11 @@ def oneGeneration(population, eliteSize, mutationProbability):
 
 
 start_time = time.time()
-'''
-filename = 'TSPdata/tsp-case04.txt'
-popSize = 40
-eliteSize = 10
-mutationProbability = 0.015
-iteration_limit = 250
-'''
 filename = 'TSPdata/tsp-case03.txt'
-popSize = 100
-eliteSize = 20
-mutationProbability = 0.025
-iteration_limit = 300#1500
+popSize = 20
+eliteSize = 5
+mutationProbability = 0.01
+iteration_limit = 100
 
 cityList = genCityList(filename)
 
@@ -291,8 +324,6 @@ population = initialPopulation(popSize, cityList)
 distances = [Fitness(p).routeDistance() for p in population]
 min_dist = min(distances)
 print("Best distance for initial population: " + str(min_dist))
-progress = []
-progress.append(1 / rankRoutes(population)[0][1])
 
 for i in range(iteration_limit):
     population = oneGeneration(population, eliteSize, mutationProbability)
@@ -300,12 +331,6 @@ for i in range(iteration_limit):
     min_dist = min(distances)
     print("Best distance for population in iteration " + str(i) +
           ": " + str(min_dist))
-    progress.append(1 / rankRoutes(population)[0][1])
-
-plt.plot(progress)
-plt.ylabel('Distance')
-plt.xlabel('Generation')
-plt.show()
     #TODO - Perhaps we should save the best distance (or the route itself)
     # for plotting? A plot may be better at demonstrating performance over
     # iterations.
@@ -316,6 +341,7 @@ plt.show()
     # a different stopping criterion (e.g. best fitness no longer
     # improving)?
 
+'''
 end_time = time.time()
 print("Time taken: {} s".format(end_time-start_time))
 
@@ -327,3 +353,5 @@ with open(filename, mode='w') as f:
     writer = csv.writer(f, delimiter=' ', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     for i in range(len(best_route)):
         writer.writerow([i, best_route[i].x, best_route[i].y])
+        
+'''
