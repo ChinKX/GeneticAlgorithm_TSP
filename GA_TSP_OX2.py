@@ -257,7 +257,7 @@ def oneGeneration(population, eliteSize, mutationProbability):
 
 start_time = time.time()
 
-filename = 'TSPdata/tsp-case03.txt'
+filename = 'TSPdata/tsp-case04.txt'
 popSize = 20
 eliteSize = 5
 mutationProbability = 0.01
