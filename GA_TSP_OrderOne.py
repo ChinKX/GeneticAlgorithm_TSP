@@ -97,25 +97,21 @@ def parentSelection(population, poolSize=None):
     is useful if we are doing survivorSelection as well, otherwise we
     can just set poolSize = len(population).
     """
-    
     if poolSize == None:
         poolSize = len(population)
     
     matingPool = []
-    
-    ###2nd approach - Tournament Selection###
-    tournament_size = 0.2 * len(population)
+    ###Roulette Wheel
+
+    ###Version 2
+    max = sum(Fitness(p).routeFitness() for p in population)
+    selection_probs = [Fitness(p).routeFitness()/max for p in population]
     
     for i in range(0, poolSize):
-        randPop = random.sample(population, int(tournament_size))
-        best = randPop[0]
-        for i in range(0, len(randPop)):
-            if Fitness(randPop[i]).routeFitness() > Fitness(best).routeFitness():
-                best = randPop[i]
-        matingPool.append(best)
-        
+        matingPool.append(population[np.random.choice(len(population), p=selection_probs)])
+    
     return matingPool
-
+    
 def survivorSelection(population, popRanked, eliteSize):
     """
     This function returns a list of length eliteSize (the selected
@@ -139,60 +135,30 @@ def survivorSelection(population, popRanked, eliteSize):
     return elites
 
 def crossover(parent1, parent2):
-    #TODO - the code above simply generates new random routes.
-    # Replace it with code which implements a suitable crossover method.
-    ###1st approach - Davis’ Order Crossover (OX1)###
+    ###Order One Crossover
     child = [None] * len(parent1)
     
-    # generate a random range within the chromosome
-    gene1 = random.randint(0, len(parent1) - 1)
-    gene2 = random.randint(0, len(parent1) - 1)
+    geneA = int(random.random() * len(parent1))
+    geneB = int(random.random() * len(parent1))
     
-    # check for identical genes i.e. gene1 == gene2
-    while gene1 == gene2:
-        gene1 = random.randint(0, len(parent1) - 1)
-        gene2 = random.randint(0, len(parent1) - 1)
-    
-    # sort the order
-    startGene = min(gene1, gene2)
-    endGene = max(gene1, gene2)
-    
-    # get the slice of the parent 1 chromosome and put into the child
+    startGene = min(geneA, geneB)
+    endGene = max(geneA, geneB)
+
     for i in range(startGene, endGene + 1):
-        child[i] = parent1[i]
+        child[i] = parent2[i]
+        
+    temp = [gene for gene in parent1 if gene not in child and not None]
     
-    # copy remained unused genes from second parent to the child, wrapping around the list
-    count = endGene + 1
-    childCount = endGene + 1
-    isComplete = False
-    while not isComplete:
-        #print(child)# to be removed
-        if count == len(parent1):
-            #print("0")
-            count = 0
-        elif count == endGene:
-            #print("2nd")
-            if None in child:# presence of None indicates the child is not fully filled up with genes yet
-                if childCount == len(child):
-                        childCount = child.index(None)
-                if parent2[count] not in child:
-                    child[childCount] = parent2[count]
-            isComplete = True
-        else:
-            if parent2[count] not in child:# presence of None indicates the child is not fully filled up with genes yet
-                #print("3rd")
-                if None in child:
-                    if childCount == len(child):
-                        childCount = child.index(None)
-                    child[childCount] = parent2[count]
-                    childCount += 1
-            count += 1
+    count = 0
+    while None in child:
+        child[child.index(None)] = temp[count]
+        count += 1
+    
+    return child
+    
     
     #TODO - the code above simply generates new random routes.
     # Replace it with code which implements a suitable crossover method.
-    
-    return child
-
 
 def breedPopulation(matingpool, poolSize):
     children = []
@@ -225,12 +191,10 @@ def mutate(route, mutationProbability):
     
     return route
     '''
-    ###Shuffle mutation
-    portionLen = int(0.02 * len(route))
+    portionLen = int(0.05 * len(route))
 
     idx = random.randint(0, len(route) - portionLen)
-    portion = route[idx : idx + portionLen]
-    route[idx : idx + portionLen] = random.sample(portion, len(portion))    
+    route[idx : idx + portionLen] = reversed(route[idx : idx + portionLen])
     
     return route
     
@@ -280,21 +244,14 @@ start_time = time.time()
 filename = 'TSPdata/tsp-case04.txt'
 popSize = 60
 eliteSize = 15
-mutationProbability = 0.01
+mutationProbability = 0.01# not used bcoz we are using shuffle mutation
 iteration_limit = 300
 '''
 filename = 'TSPdata/tsp-case03.txt'
 popSize = 20
 eliteSize = 5
-mutationProbability = 0.01# not used bcoz we are using shuffle mutation
-iteration_limit = 100
-'''
-'''
-filename = 'TSPdata/tsp-case03.txt'
-popSize = 100
-eliteSize = 20
 mutationProbability = 0.01
-iteration_limit = 800
+iteration_limit = 100
 '''
 cityList = genCityList(filename)
 

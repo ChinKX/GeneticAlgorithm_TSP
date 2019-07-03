@@ -179,6 +179,7 @@ def geneticAlgorithmPlot(population, popSize, eliteSize, mutationRate, generatio
     progress.append(1 / rankRoutes(pop)[0][1])
     
     for i in range(0, generations):
+        print(i)
         pop = nextGeneration(pop, eliteSize, mutationRate)
         progress.append(1 / rankRoutes(pop)[0][1])
     
@@ -194,13 +195,13 @@ cityList = []
 for i in range(0,25):
     cityList.append(City(x=int(random.random() * 200), y=int(random.random() * 200)))
 '''
-data = pd.read_csv("TSPdata/tsp-case03.txt", sep=" ", header=None, names=["index", "x", "y"])
+data = pd.read_csv("TSPdata/tsp-case04.txt", sep=" ", header=None, names=["index", "x", "y"])
 data.set_index('index', inplace=True)
 #print(data)
 
 for index, row in data.iterrows():
     #access data using column names
-    cityList.append(City(row['x'], row['y'])) 
+    cityList.append(City(row['x'], row['y']))
 
 #geneticAlgorithmPlot(population=cityList, popSize=100, eliteSize=20, mutationRate=0.01, generations=500)
-geneticAlgorithmPlot(population=cityList, popSize=20, eliteSize=5, mutationRate=0.01, generations=100)
+geneticAlgorithm(population=cityList, popSize=20, eliteSize=5, mutationRate=0.01, generations=100)

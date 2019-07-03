@@ -155,28 +155,23 @@ def survivorSelection(population, popRanked, eliteSize):
 
 def crossover(parent1, parent2):
     ###2nd approach - order-based crossover (OX2)###
-    child1 = [None] * len(parent1)
-    child2 = [None] * len(parent1)
+    size = round(random.uniform(0.4, 0.8), 2) * len(parent1)
+    genes = []
     
-    geneA = int(random.random() * len(parent1))
-    geneB = int(random.random() * len(parent1))
+    for i in range(0, int(size)):
+        gene = parent2[int(random.random() * len(parent1))]
+        while gene in genes:
+            gene = parent2[int(random.random() * len(parent1))]
+        genes.append(gene)
     
-    startGene = min(geneA, geneB)
-    endGene = max(geneA, geneB)
-
-    for i in range(startGene, endGene + 1):
-        child1[i] = parent2[i]
-        child2[i] = parent1[i]
+    child = [gene if gene not in genes else None for gene in parent1]
         
-    for i in range(0, startGene):
-        child1[i] = parent1[i]
-        child2[i] = parent2[i]
+    count = 0
+    while None in child:
+        child[child.index(None)] = genes[count]
+        count += 1
         
-    for i in range(endGene + 1, len(parent1)):
-        child1[i] = parent1[i]
-        child2[i] = parent2[i]
-        
-    return child1, child2
+    return child
     
     #TODO - the code above simply generates new random routes.
     # Replace it with code which implements a suitable crossover method.
@@ -186,10 +181,15 @@ def crossover(parent1, parent2):
 def breedPopulation(matingpool, poolSize):
     children = []
     
+    '''
     for i in range(1, len(matingpool), 2):
         child1, child2 = crossover(matingpool[i-1], matingpool[i])
         children.append(child1)
         children.append(child2)
+    '''
+    for i in range(0, poolSize):
+        child = crossover(matingpool[i-1], matingpool[i])
+        children.append(child)
         
     return children
 
@@ -198,6 +198,7 @@ def mutate(route, mutationProbability):
     mutationProbability is the probability that any one City instance
     will undergo mutation
     """
+    '''
     for swapped in range(len(route)):
         if (random.random() < mutationProbability):
             ###1st approach - swap mutation###
@@ -211,6 +212,14 @@ def mutate(route, mutationProbability):
             #TODO - the code above simply swaps a city with the city
             # before it. This isn't really a good idea, replace it with
             # code which implements a better mutation method
+    
+    return route
+    '''
+    portionLen = int(0.02 * len(route))
+
+    idx = random.randint(0, len(route) - portionLen)
+    portion = route[idx : idx + portionLen]
+    route[idx : idx + portionLen] = random.sample(portion, len(portion))    
     
     return route
 
@@ -256,12 +265,6 @@ def oneGeneration(population, eliteSize, mutationProbability):
 
 
 start_time = time.time()
-
-filename = 'TSPdata/tsp-case04.txt'
-popSize = 20
-eliteSize = 5
-mutationProbability = 0.01
-iteration_limit = 100
 '''
 filename = 'TSPdata/tsp-case04.txt'
 popSize = 20
@@ -269,13 +272,12 @@ eliteSize = 5
 mutationProbability = 0.016
 iteration_limit = 300
 '''
-'''
 filename = 'TSPdata/tsp-case03.txt'
-popSize = 100
-eliteSize = 20
-mutationProbability = 0.022
-iteration_limit = 1200
-'''
+popSize = 20
+eliteSize = 5
+mutationProbability = 0.01
+iteration_limit = 100
+
 cityList = genCityList(filename)
 
 population = initialPopulation(popSize, cityList)
