@@ -154,23 +154,45 @@ def survivorSelection(population, popRanked, eliteSize):
     return elites
 
 def crossover(parent1, parent2):
-    ###2nd approach - order-based crossover (OX2)###
-    size = round(random.uniform(0.4, 0.8), 2) * len(parent1)
+    ###order-based crossover (OX2)###
+    
+    # generate a random range within the chromosome
+    gene1 = random.randint(0, len(parent1) - 1)
+    gene2 = random.randint(0, len(parent1) - 1)
+    
+    # check for identical genes i.e. gene1 == gene2
+    while gene1 == gene2:
+        gene1 = random.randint(0, len(parent1) - 1)
+        gene2 = random.randint(0, len(parent1) - 1)
+    
+    # sort the order
+    startGene = min(gene1, gene2)
+    endGene = max(gene1, gene2)
+    
     genes = []
     
-    for i in range(0, int(size)):
-        gene = parent2[int(random.random() * len(parent1))]
-        while gene in genes:
-            gene = parent2[int(random.random() * len(parent1))]
-        genes.append(gene)
+    for i in range(startGene, endGene + 1):
+        genes.append(parent2[i])
+    
+    random.shuffle(genes)
+    size = int(len(genes) * 0.2)
+    
+    while size > 0:
+        genes.pop()
+        size -= 1
+    
+    #print(genes)
     
     child = [gene if gene not in genes else None for gene in parent1]
-        
+    
+    #print(child)
+    
     count = 0
     while None in child:
         child[child.index(None)] = genes[count]
         count += 1
-        
+    
+    #print(child)
     return child
     
     #TODO - the code above simply generates new random routes.
