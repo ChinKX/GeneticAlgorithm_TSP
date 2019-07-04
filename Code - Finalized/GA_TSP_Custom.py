@@ -5,7 +5,7 @@
 
 # ## Imports
 
-# In[1]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -22,7 +22,7 @@ from pprint import pprint as print # pretty printing, easier to read but takes m
 # 
 # The 'City' class allows us to easily measure distance between cities. A list of cities is called a route, and will be our chromosome for this genetic algorithm.
 
-# In[2]:
+# In[ ]:
 
 
 class City:
@@ -42,7 +42,7 @@ class City:
 
 # The 'Fitness' class helps to calculate both the distance and the fitness of a route (list of City instances).
 
-# In[3]:
+# In[ ]:
 
 
 class Fitness:
@@ -75,7 +75,7 @@ class Fitness:
 # 
 # Initialization starts with a large **population** of randomly generated chromosomes. We will use 3 functions. The first one generates a list of cities from a file.
 
-# In[4]:
+# In[ ]:
 
 
 def genCityList(filename):
@@ -94,7 +94,7 @@ def genCityList(filename):
 
 # The second function generates a random route (chromosome) from a list of City instances.
 
-# In[5]:
+# In[ ]:
 
 
 def createRoute(cityList):
@@ -104,7 +104,7 @@ def createRoute(cityList):
 
 # The third function repeatedly calls the second function to create an initial population (list of routes).
 
-# In[6]:
+# In[ ]:
 
 
 def initialPopulation(popSize, cityList):
@@ -118,7 +118,7 @@ def initialPopulation(popSize, cityList):
 # 
 # Parent selection is the primary form of selection, and is used to create a mating pool.
 
-# In[7]:
+# In[ ]:
 
 
 '''
@@ -132,32 +132,7 @@ def rankRoutes(population):
     return sorted(fitnessResults.items(), key = lambda x : x[1], reverse = True)
 
 
-# In[8]:
-
-
-def parentSelection(population, poolSize=None):
-    """
-    Note that this function returns only poolSize City instances. This
-    is useful if we are doing survivorSelection as well, otherwise we
-    can just set poolSize = len(population).
-    """
-    if poolSize == None:
-        poolSize = len(population)
-    
-    matingPool = []
-    ###Roulette Wheel
-
-    ###Version 2
-    max = sum(Fitness(p).routeFitness() for p in population)
-    selection_probs = [Fitness(p).routeFitness()/max for p in population]
-    
-    for i in range(0, poolSize):
-        matingPool.append(population[np.random.choice(len(population), p=selection_probs)])
-    
-    return matingPool
-
-
-# In[9]:
+# In[ ]:
 
 
 def parentSelection(population, poolSize=None):
@@ -183,7 +158,7 @@ def parentSelection(population, poolSize=None):
 
 # Another form of selection is survivor selection, which is used to ensure certain individuals (normally high fitness ones) survive to the next generation.
 
-# In[10]:
+# In[ ]:
 
 
 def survivorSelection(population, popRanked, eliteSize):
@@ -209,11 +184,11 @@ def survivorSelection(population, popRanked, eliteSize):
 # 
 # The crossover function combines two parents in such a way that their children inherit some of each parent's characteristics. In the case of TSP, you will need to use crossover methods such as Davis' Order Crossover (other examples are listed in the lecture slides).
 
-# In[11]:
+# In[ ]:
 
 
 def crossover(parent1, parent2):
-    ###Order One Crossover###
+    ###Custom Designed Order Crossover###
     child = [None] * len(parent1)
     
     #generate a random slice within the chromosome
@@ -248,7 +223,7 @@ def crossover(parent1, parent2):
 
 # Crossover should be run on pairs from the mating pool to produce a new generation (of the same size).
 
-# In[12]:
+# In[ ]:
 
 
 def breedPopulation(matingpool, poolSize):
@@ -265,7 +240,7 @@ def breedPopulation(matingpool, poolSize):
 # 
 # Mutations are small random changes which maintain/introduce diversity. By necessity, mutations must occur at low probability and avoid changing everything in a chromosome. As with crossover, mutation in TSP must respect the constraint that every City occurs exactly once in the Route.
 
-# In[13]:
+# In[ ]:
 
 
 def mutate(route):
@@ -281,7 +256,7 @@ def mutate(route):
 
 # The mutate function needs to be run over the entire population, obviously.
 
-# In[14]:
+# In[ ]:
 
 
 def mutation(population):
@@ -296,7 +271,7 @@ def mutation(population):
 # 
 # Now that we have (almost) all our component functions in place, let's call them altogether.
 
-# In[15]:
+# In[ ]:
 
 
 def oneGeneration(population, eliteSize):
@@ -328,11 +303,11 @@ def oneGeneration(population, eliteSize):
 # 
 # The entire genetic algorithm needs to initialize a Route of City instances, then iteratively generate new generations. Take note that, unlike all the cells above, the cell below is NOT a function. Various parameters are set right at the top (you should set them to something reasonable).
 
-# In[16]:
+# In[ ]:
 
 
 start_time = time.time()
-
+'''
 filename = 'TSPdata/tsp-case04.txt'
 popSize = 40
 eliteSize = 10
@@ -342,7 +317,7 @@ filename = 'TSPdata/tsp-case03.txt'
 popSize = 20
 eliteSize = 5
 iteration_limit = 100
-'''
+
 cityList = genCityList(filename)
 
 population = initialPopulation(popSize, cityList)

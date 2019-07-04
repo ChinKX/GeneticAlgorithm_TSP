@@ -326,17 +326,20 @@ def oneGeneration(population, eliteSize):
 
 
 start_time = time.time()
-
 filename = 'TSPdata/tsp-case04.txt'
-popSize = 40
-eliteSize = 10
-mutationProbability = 0.01# not used bcoz we are using shuffle mutation
-iteration_limit = 200
+popSize = 65
+eliteSize = 16
+iteration_limit = 500
+'''
+filename = 'TSPdata/tsp-case04.txt'
+popSize = 60
+eliteSize = 15
+iteration_limit = 300
+'''
 '''
 filename = 'TSPdata/tsp-case03.txt'
 popSize = 20
 eliteSize = 5
-mutationProbability = 0.01
 iteration_limit = 100
 '''
 cityList = genCityList(filename)

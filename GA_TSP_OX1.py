@@ -281,7 +281,7 @@ filename = 'TSPdata/tsp-case04.txt'
 popSize = 60
 eliteSize = 15
 mutationProbability = 0.01
-iteration_limit = 300
+iteration_limit = 500
 '''
 filename = 'TSPdata/tsp-case03.txt'
 popSize = 20

@@ -247,8 +247,8 @@ def oneGeneration(population, eliteSize, mutationProbability):
 start_time = time.time()
 
 filename = 'TSPdata/tsp-case04.txt'
-popSize = 40
-eliteSize = 10
+popSize = 60
+eliteSize = 15
 mutationProbability = 0.01# not used bcoz we are using shuffle mutation
 iteration_limit = 200
 '''
