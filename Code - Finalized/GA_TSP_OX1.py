@@ -1,4 +1,14 @@
-# Put the imports you need here
+#!/usr/bin/env python
+# coding: utf-8
+
+# # Genetic Algorithm Lab
+
+# ## Imports
+
+# In[1]:
+
+
+get_ipython().run_line_magic('matplotlib', 'inline')
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -6,6 +16,14 @@ import random
 import time
 import csv
 from pprint import pprint as print # pretty printing, easier to read but takes more room
+
+
+# ## Convenience Classes
+# 
+# The 'City' class allows us to easily measure distance between cities. A list of cities is called a route, and will be our chromosome for this genetic algorithm.
+
+# In[2]:
+
 
 class City:
     def __init__(self, x, y):
@@ -16,13 +34,17 @@ class City:
         xDis = abs(self.x - city.x)
         yDis = abs(self.y - city.y)
         distance = np.sqrt((xDis ** 2) + (yDis ** 2))
-        #SUGGESTION - What if we wanted to use a different distance
-        # metric? Would that make sense for this problem?
         return distance
     
     def __repr__(self):
         return "(" + str(self.x) + "," + str(self.y) + ")"
-    
+
+
+# The 'Fitness' class helps to calculate both the distance and the fitness of a route (list of City instances).
+
+# In[3]:
+
+
 class Fitness:
     def __init__(self, route):
         self.route = route
@@ -46,66 +68,88 @@ class Fitness:
     def routeFitness(self):
         if self.fitness == None:
             self.fitness = 1 / float(self.routeDistance())
-            #SUGGESTION - Is the scaling an issue with this method
-            # of defining fitness? Would negative distance make more
-            # sense (obviously with properly defined selection functions)
         return self.fitness
-    
+
+
+# ## Initialization Step
+# 
+# Initialization starts with a large **population** of randomly generated chromosomes. We will use 3 functions. The first one generates a list of cities from a file.
+
+# In[4]:
+
+
 def genCityList(filename):
     cityList = []
-    #TODO - implement this function by replacing the code between the TODO lines
-    '''
-    for i in range(0,12):
-        cityList.append(City(x=int(random.random() * 200),
-                             y=int(random.random() * 200)))
-    '''
+    
+    #Read the data from textfile into pandas dataframe
     data = pd.read_csv(filename, sep=" ", header=None, names=["index", "x", "y"])
     data.set_index('index', inplace=True)
-    #print(data)
     
+    #Iterate through the dataframe and use x and y coordinates to create City objects
     for index, row in data.iterrows():
-        #access data using column names
-        #print(str(row['x']) + " " + str(row['y']))
         cityList.append(City(row['x'], row['y']))
     
-    #TODO - the code above just generates 12 cities (useful for testing)
     return cityList
+
+
+# The second function generates a random route (chromosome) from a list of City instances.
+
+# In[5]:
+
 
 def createRoute(cityList):
     route = random.sample(cityList, len(cityList))
     return route
 
+
+# The third function repeatedly calls the second function to create an initial population (list of routes).
+
+# In[6]:
+
+
 def initialPopulation(popSize, cityList):
     population = []
     for i in range(0, popSize):
         population.append(createRoute(cityList))
-    #SUGGESTION - Could population be 'seeded' with known good routes?
-    # In other words, would heuristic initialization help?
     return population
 
+
+# ## Selection
+# 
+# Parent selection is the primary form of selection, and is used to create a mating pool.
+
+# In[7]:
+
+
+'''
+This function is used to rank the routes in the population in descending order
+This function returns the indexes of the routes rather the actual routes
+''' 
 def rankRoutes(population):
     fitnessResults = {}
     for i in range(0, len(population)):
         fitnessResults[i] = Fitness(population[i]).routeFitness()
-    #return sorted(fitnessResults.items(), key = operator.itemgetter(1), reverse = True)
-    # lambda x : x[1] will return the value of an item in the dict
-    return sorted(fitnessResults.items(), key = lambda x : x[1], reverse = True)###Possible Error
+    return sorted(fitnessResults.items(), key = lambda x : x[1], reverse = True)
+
+
+# In[8]:
+
 
 def parentSelection(population, poolSize=None):
-    """
-    Note that this function returns only poolSize City instances. This
-    is useful if we are doing survivorSelection as well, otherwise we
-    can just set poolSize = len(population).
-    """
     
+    ###Tournament selection###
     if poolSize == None:
         poolSize = len(population)
     
     matingPool = []
     
-    ###2nd approach - Tournament Selection###
+    #define the size of the sample to be taken from the population
     tournament_size = 0.2 * len(population)
     
+    '''
+    Sample 20% of the routes from the population, rank the routes and retrieve the route with highest fitness
+    Repeat the step above for the size of poolSize
+    '''
     for i in range(0, poolSize):
         randPop = random.sample(population, int(tournament_size))
         best = randPop[0]
@@ -116,35 +160,43 @@ def parentSelection(population, poolSize=None):
         
     return matingPool
 
+
+# Another form of selection is survivor selection, which is used to ensure certain individuals (normally high fitness ones) survive to the next generation.
+
+# In[9]:
+
+
 def survivorSelection(population, popRanked, eliteSize):
-    """
-    This function returns a list of length eliteSize (the selected
-    City instances which will be preserved)
-    """
     elites = []
     selectionResults = []
     
+    ###Fitness based survivor selection
+    '''
+    Note: popRanked stores the ranked routes
+    Get the indexes of the first eliteSize routes with top fitnesses
+    '''
     for i in range(eliteSize):
-        #selectionResults.append(popRanked[-(i + 1)][0])
         selectionResults.append(popRanked[i][0])
-    #TODO - the code above just selects the first eliteSize City instances.
-    # Replace it with code which selects the best individuals
-    #SUGGESTION - age-based survivor selection isn't trivial to implement
-    # based on this notebook, as you would need to make changes to how
-    # the chromosomes are stored. Consider it a fun challenge (not
-    # required, no bonus marks) for those who find this lab too easy.
+        
+    #Get the actual routes using the indexes in selectionResults
     for i in range(0, len(selectionResults)):
         elites.append(population[selectionResults[i]])
 
     return elites
 
+
+# ## Crossover
+# 
+# The crossover function combines two parents in such a way that their children inherit some of each parent's characteristics. In the case of TSP, you will need to use crossover methods such as Davis' Order Crossover (other examples are listed in the lecture slides).
+
+# In[10]:
+
+
 def crossover(parent1, parent2):
-    #TODO - the code above simply generates new random routes.
-    # Replace it with code which implements a suitable crossover method.
-    ###1st approach - Davis’ Order Crossover (OX1)###
+    ###Davis’ Order Crossover (OX1)###
     child = [None] * len(parent1)
     
-    # generate a random range within the chromosome
+    #generate a random slice within the chromosome
     gene1 = random.randint(0, len(parent1) - 1)
     gene2 = random.randint(0, len(parent1) - 1)
     
@@ -162,16 +214,13 @@ def crossover(parent1, parent2):
         child[i] = parent1[i]
     
     # copy remained unused genes from second parent to the child, wrapping around the list
-    count = endGene + 1
-    childCount = endGene + 1
+    count = endGene + 1#to indicate gene position in parent
+    childCount = endGene + 1#to indicate gene position in child
     isComplete = False
     while not isComplete:
-        #print(child)# to be removed
         if count == len(parent1):
-            #print("0")
             count = 0
         elif count == endGene:
-            #print("2nd")
             if None in child:# presence of None indicates the child is not fully filled up with genes yet
                 if childCount == len(child):
                         childCount = child.index(None)
@@ -180,7 +229,6 @@ def crossover(parent1, parent2):
             isComplete = True
         else:
             if parent2[count] not in child:# presence of None indicates the child is not fully filled up with genes yet
-                #print("3rd")
                 if None in child:
                     if childCount == len(child):
                         childCount = child.index(None)
@@ -188,10 +236,12 @@ def crossover(parent1, parent2):
                     childCount += 1
             count += 1
     
-    #TODO - the code above simply generates new random routes.
-    # Replace it with code which implements a suitable crossover method.
-    
     return child
+
+
+# Crossover should be run on pairs from the mating pool to produce a new generation (of the same size).
+
+# In[11]:
 
 
 def breedPopulation(matingpool, poolSize):
@@ -203,47 +253,49 @@ def breedPopulation(matingpool, poolSize):
         
     return children
 
-def mutate(route, mutationProbability):
-    """
-    mutationProbability is the probability that any one City instance
-    will undergo mutation
-    """
-    '''
-    for swapped in range(len(route)):
-        if (random.random() < mutationProbability):
-            ###1st approach - swap mutation###
-            swapWith = random.randint(0, len(route) - 1)
-            
-            city1 = route[swapped]
-            city2 = route[swapWith]
-            route[swapped] = city2
-            route[swapWith] = city1
-            
-            #TODO - the code above simply swaps a city with the city
-            # before it. This isn't really a good idea, replace it with
-            # code which implements a better mutation method
-    
-    return route
-    '''
-    ###Shuffle mutation
-    portionLen = int(0.02 * len(route))
 
+# ## Mutation
+# 
+# Mutations are small random changes which maintain/introduce diversity. By necessity, mutations must occur at low probability and avoid changing everything in a chromosome. As with crossover, mutation in TSP must respect the constraint that every City occurs exactly once in the Route.
+
+# In[12]:
+
+
+def mutate(route):
+    ###Shuffle mutation###
+    portionLen = int(0.02 * len(route))
+    
+    #get a random portion of a route and shuffle that portion
     idx = random.randint(0, len(route) - portionLen)
     portion = route[idx : idx + portionLen]
     route[idx : idx + portionLen] = random.sample(portion, len(portion))    
     
     return route
-    
-def mutation(population, mutationProbability):
+
+
+# The mutate function needs to be run over the entire population, obviously.
+
+# In[13]:
+
+
+def mutation(population):
     mutatedPopulation = []
     for i in range(0, len(population)):
-        mutatedIndividual = mutate(population[i], mutationProbability)
+        mutatedIndividual = mutate(population[i])
         mutatedPopulation.append(mutatedIndividual)
     return mutatedPopulation
 
-def oneGeneration(population, eliteSize, mutationProbability):
+
+# ## Running One Generation
+# 
+# Now that we have (almost) all our component functions in place, let's call them altogether.
+
+# In[14]:
+
+
+def oneGeneration(population, eliteSize):
     
-    # First rank the chromosomes in the population
+    # First rank the routes i.e. chromosomes in the population
     popRanked = rankRoutes(population)
     
     # First we preserve the elites
@@ -254,47 +306,38 @@ def oneGeneration(population, eliteSize, mutationProbability):
     poolSize = len(population) - eliteSize
     matingpool = parentSelection(population, poolSize)
     
-    #SUGGESTION - What if the elites were removed from the mating pool?
-    # Would that help or hurt the genetic algorithm? How would that affect
-    # diversity? How would that affect performance/convergence?
-    
     # Then we perform crossover on the mating pool
     children = breedPopulation(matingpool, poolSize)
     
     # We combine the elites and children into one population
     new_population = elites + children
     
-    #print(len(elites[0]))
-    #print(len(children[0]))
-    #print(len(new_population[0]))
     # We mutate the population
-    mutated_population = mutation(new_population, mutationProbability)
-    #SUGGESTION - If we do mutation before selection and breeding, does
-    # it make any difference?
+    mutated_population = mutation(new_population)
     
     return mutated_population
+
+
+# ## Running Genetic Algorithm
+# 
+# The entire genetic algorithm needs to initialize a Route of City instances, then iteratively generate new generations. Take note that, unlike all the cells above, the cell below is NOT a function. Various parameters are set right at the top (you should set them to something reasonable).
+
+# In[17]:
 
 
 start_time = time.time()
 
 filename = 'TSPdata/tsp-case04.txt'
-popSize = 60
-eliteSize = 15
-mutationProbability = 0.01
-iteration_limit = 300
+popSize = 40
+eliteSize = 10
+mutationProbability = 0.01# not used bcoz we are using shuffle mutation
+iteration_limit = 200
 '''
 filename = 'TSPdata/tsp-case03.txt'
 popSize = 20
 eliteSize = 5
-mutationProbability = 0.01# not used bcoz we are using shuffle mutation
-iteration_limit = 100
-'''
-'''
-filename = 'TSPdata/tsp-case03.txt'
-popSize = 100
-eliteSize = 20
 mutationProbability = 0.01
-iteration_limit = 800
+iteration_limit = 100
 '''
 cityList = genCityList(filename)
 
@@ -303,32 +346,32 @@ distances = [Fitness(p).routeDistance() for p in population]
 min_dist = min(distances)
 print("Best distance for initial population: " + str(min_dist))
 progress = []
-progress.append(1 / rankRoutes(population)[0][1])
+progress.append(1 / rankRoutes(population)[0][1])#append the best route in each iteration into the list
 
 for i in range(iteration_limit):
-    population = oneGeneration(population, eliteSize, mutationProbability)
+    population = oneGeneration(population, eliteSize)
     distances = [Fitness(p).routeDistance() for p in population]
     min_dist = min(distances)
     print("Best distance for population in iteration " + str(i) +
           ": " + str(min_dist))
-    progress.append(1 / rankRoutes(population)[0][1])
+    progress.append(1 / rankRoutes(population)[0][1])#append the best route in each iteration into the list
 
+#plot the graph showing the improvement of solution over generations
 plt.plot(progress)
 plt.ylabel('Distance')
 plt.xlabel('Generation')
 plt.show()
-#TODO - Perhaps we should save the best distance (or the route itself)
-# for plotting? A plot may be better at demonstrating performance over
-# iterations.
-#SUGGESTION - You could also print/plot the N best routes per
-# iteration, would this give more insight into what's happening?
-#SUGGESTION - The suggested code in this cell stops when a specific
-# number of iterations are reached. Would it help to implement
-# a different stopping criterion (e.g. best fitness no longer
-# improving)?
 
 end_time = time.time()
 print("Time taken: {} s".format(end_time-start_time))
+
+
+# ## Saving the final solution
+# 
+# Once you have completed the lab, you will have to save the final solution to a CSV file for verification. Note that any cheating (identical CSV files, reporting wrong total distances, or modifying coordinates) will result in zero marks awarded for this lab.
+
+# In[ ]:
+
 
 filename = 'mysolution.csv'
 distances = [Fitness(p).routeDistance() for p in population]
@@ -338,3 +381,4 @@ with open(filename, mode='w') as f:
     writer = csv.writer(f, delimiter=' ', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     for i in range(len(best_route)):
         writer.writerow([i, best_route[i].x, best_route[i].y])
+
