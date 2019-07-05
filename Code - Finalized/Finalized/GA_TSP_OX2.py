@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Genetic Algorithm Lab (Position-based == Order one == Davis Crossover)
+# # Genetic Algorithm Lab
 
 # ## Imports
 
@@ -188,34 +188,39 @@ def survivorSelection(population, popRanked, eliteSize):
 
 
 def crossover(parent1, parent2):
-    ###Position-Based Crossover###
-    child = [None] * len(parent1)
+    ###order-based crossover (OX2)###
     
-    #generate a random slice within the chromosome
-    geneA = int(random.random() * len(parent1))
-    geneB = int(random.random() * len(parent1))
+    # generate a random range within the chromosome
+    gene1 = random.randint(0, len(parent1) - 1)
+    gene2 = random.randint(0, len(parent1) - 1)
     
     # check for identical genes i.e. gene1 == gene2
-    while geneA == geneB:
-        geneA = random.randint(0, len(parent1) - 1)
-        geneB = random.randint(0, len(parent1) - 1)
-
+    while gene1 == gene2:
+        gene1 = random.randint(0, len(parent1) - 1)
+        gene2 = random.randint(0, len(parent1) - 1)
+    
     # sort the order
-    startGene = min(geneA, geneB)
-    endGene = max(geneA, geneB)
-
-    '''
-    First, copy the selected portion from parent1 to child
-    Second, copy the genes from parent2 to child which are not in the child
-    '''
+    startGene = min(gene1, gene2)
+    endGene = max(gene1, gene2)
+    
+    genes = []
+    
     for i in range(startGene, endGene + 1):
-        child[i] = parent2[i]
-        
-    temp = [gene for gene in parent1 if gene not in child and not None]
+        genes.append(parent2[i])
+    
+    #randomly pop some genes to make the sequence is not consecutive
+    random.shuffle(genes)
+    size = int(len(genes) * 0.2)
+    
+    while size > 0:
+        genes.pop()
+        size -= 1
+    
+    child = [gene if gene not in genes else None for gene in parent1]
     
     count = 0
     while None in child:
-        child[child.index(None)] = temp[count]
+        child[child.index(None)] = genes[count]
         count += 1
     
     return child

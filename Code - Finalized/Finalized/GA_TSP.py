@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Genetic Algorithm Lab (Position-based == Order one == Davis Crossover)
+# # Genetic Algorithm Lab
 
 # ## Imports
 
@@ -118,19 +118,53 @@ def initialPopulation(popSize, cityList):
 # 
 # Parent selection is the primary form of selection, and is used to create a mating pool.
 
+# ### 1. Parent Selection
+
 # In[ ]:
 
 
 '''
 This function is used to rank the routes in the population in descending order
 This function returns the indexes of the routes rather the actual routes
-''' 
+'''
 def rankRoutes(population):
     fitnessResults = {}
     for i in range(0, len(population)):
         fitnessResults[i] = Fitness(population[i]).routeFitness()
     return sorted(fitnessResults.items(), key = lambda x : x[1], reverse = True)
 
+
+# #### a) Tournament selection
+
+# In[ ]:
+
+
+def parentSelection(population, poolSize=None):
+    ###Tournament selection###
+    if poolSize == None:
+        poolSize = len(population)
+    
+    matingPool = []
+    
+    #define the size of the sample to be taken from the population
+    tournament_size = 0.2 * len(population)
+    
+    '''
+    Sample 20% of the routes from the population, rank the routes and retrieve the route with highest fitness
+    Repeat the step above for the size of poolSize
+    '''
+    for i in range(0, poolSize):
+        randPop = random.sample(population, int(tournament_size))
+        best = randPop[0]
+        for i in range(0, len(randPop)):
+            if Fitness(randPop[i]).routeFitness() > Fitness(best).routeFitness():
+                best = randPop[i]
+        matingPool.append(best)
+        
+    return matingPool
+
+
+# #### b) Roulette Wheel Selection
 
 # In[ ]:
 
@@ -156,6 +190,7 @@ def parentSelection(population, poolSize=None):
     return matingPool
 
 
+# ### 2. Fitness-Based Survivor Selection
 # Another form of selection is survivor selection, which is used to ensure certain individuals (normally high fitness ones) survive to the next generation.
 
 # In[ ]:
@@ -184,38 +219,97 @@ def survivorSelection(population, popRanked, eliteSize):
 # 
 # The crossover function combines two parents in such a way that their children inherit some of each parent's characteristics. In the case of TSP, you will need to use crossover methods such as Davis' Order Crossover (other examples are listed in the lecture slides).
 
+# #### a) Davis’ Order Crossover (OX1)
+
 # In[ ]:
 
 
 def crossover(parent1, parent2):
-    ###Position-Based Crossover###
+    ###Davis’ Order Crossover (OX1)###
     child = [None] * len(parent1)
     
     #generate a random slice within the chromosome
-    geneA = int(random.random() * len(parent1))
-    geneB = int(random.random() * len(parent1))
+    gene1 = random.randint(0, len(parent1) - 1)
+    gene2 = random.randint(0, len(parent1) - 1)
     
     # check for identical genes i.e. gene1 == gene2
-    while geneA == geneB:
-        geneA = random.randint(0, len(parent1) - 1)
-        geneB = random.randint(0, len(parent1) - 1)
-
+    while gene1 == gene2:
+        gene1 = random.randint(0, len(parent1) - 1)
+        gene2 = random.randint(0, len(parent1) - 1)
+    
     # sort the order
-    startGene = min(geneA, geneB)
-    endGene = max(geneA, geneB)
-
-    '''
-    First, copy the selected portion from parent1 to child
-    Second, copy the genes from parent2 to child which are not in the child
-    '''
+    startGene = min(gene1, gene2)
+    endGene = max(gene1, gene2)
+    
+    # get the slice of the parent 1 chromosome and put into the child
     for i in range(startGene, endGene + 1):
-        child[i] = parent2[i]
-        
-    temp = [gene for gene in parent1 if gene not in child and not None]
+        child[i] = parent1[i]
+    
+    # copy remained unused genes from second parent to the child, wrapping around the list
+    count = endGene + 1#to indicate gene position in parent
+    childCount = endGene + 1#to indicate gene position in child
+    isComplete = False
+    while not isComplete:
+        if count == len(parent1):
+            count = 0
+        elif count == endGene:
+            if None in child:# presence of None indicates the child is not fully filled up with genes yet
+                if childCount == len(child):
+                        childCount = child.index(None)
+                if parent2[count] not in child:
+                    child[childCount] = parent2[count]
+            isComplete = True
+        else:
+            if parent2[count] not in child:# presence of None indicates the child is not fully filled up with genes yet
+                if None in child:
+                    if childCount == len(child):
+                        childCount = child.index(None)
+                    child[childCount] = parent2[count]
+                    childCount += 1
+            count += 1
+    
+    return child
+
+
+# #### b) Order-Based Crossover (OX2)
+
+# In[ ]:
+
+
+def crossover(parent1, parent2):
+    ###order-based crossover (OX2)###
+    
+    # generate a random range within the chromosome
+    gene1 = random.randint(0, len(parent1) - 1)
+    gene2 = random.randint(0, len(parent1) - 1)
+    
+    # check for identical genes i.e. gene1 == gene2
+    while gene1 == gene2:
+        gene1 = random.randint(0, len(parent1) - 1)
+        gene2 = random.randint(0, len(parent1) - 1)
+    
+    # sort the order
+    startGene = min(gene1, gene2)
+    endGene = max(gene1, gene2)
+    
+    genes = []
+    
+    for i in range(startGene, endGene + 1):
+        genes.append(parent2[i])
+    
+    #randomly pop some genes to make the sequence is not consecutive
+    random.shuffle(genes)
+    size = int(len(genes) * 0.2)
+    
+    while size > 0:
+        genes.pop()
+        size -= 1
+    
+    child = [gene if gene not in genes else None for gene in parent1]
     
     count = 0
     while None in child:
-        child[child.index(None)] = temp[count]
+        child[child.index(None)] = genes[count]
         count += 1
     
     return child
@@ -240,12 +334,31 @@ def breedPopulation(matingpool, poolSize):
 # 
 # Mutations are small random changes which maintain/introduce diversity. By necessity, mutations must occur at low probability and avoid changing everything in a chromosome. As with crossover, mutation in TSP must respect the constraint that every City occurs exactly once in the Route.
 
+# #### a) Shuffle Mutation
+
+# In[ ]:
+
+
+def mutate(route):
+    ###Shuffle mutation###
+    portionLen = int(0.02 * len(route))
+    
+    #get a random portion of a route and shuffle that portion
+    idx = random.randint(0, len(route) - portionLen)
+    portion = route[idx : idx + portionLen]
+    route[idx : idx + portionLen] = random.sample(portion, len(portion))    
+    
+    return route
+
+
+# #### b) Inverse Mutation
+
 # In[ ]:
 
 
 def mutate(route):
     ###Inverse Mutation###
-    portionLen = int(0.05 * len(route))
+    portionLen = int(0.02 * len(route))
 
     #get a random portion of a route and inverse that portion
     idx = random.randint(0, len(route) - portionLen)
@@ -276,7 +389,7 @@ def mutation(population):
 
 def oneGeneration(population, eliteSize):
     
-    # First rank the chromosomes in the population
+    # First rank the routes i.e. chromosomes in the population
     popRanked = rankRoutes(population)
     
     # First we preserve the elites
@@ -309,9 +422,9 @@ def oneGeneration(population, eliteSize):
 start_time = time.time()
 '''
 filename = 'TSPdata/tsp-case04.txt'
-popSize = 40
-eliteSize = 10
-iteration_limit = 200
+popSize = 60
+eliteSize = 15
+iteration_limit = 300
 '''
 filename = 'TSPdata/tsp-case03.txt'
 popSize = 20

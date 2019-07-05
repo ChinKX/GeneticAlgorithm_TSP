@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Genetic Algorithm Lab (Position-based == Order one == Davis Crossover)
+# # Genetic Algorithm Lab
 
 # ## Imports
 
@@ -136,23 +136,28 @@ def rankRoutes(population):
 
 
 def parentSelection(population, poolSize=None):
-    ###Roulette Wheel Selection###
+    
+    ###Tournament selection###
     if poolSize == None:
         poolSize = len(population)
     
     matingPool = []
     
-    '''
-    Calculate the selection probalities for each route
-    Route with higher fitness will have greater probability
-    '''
-    max = sum(Fitness(p).routeFitness() for p in population)
-    selection_probs = [Fitness(p).routeFitness()/max for p in population]
+    #define the size of the sample to be taken from the population
+    tournament_size = 0.2 * len(population)
     
-    #Randomly select routes based on their probabilities
+    '''
+    Sample 20% of the routes from the population, rank the routes and retrieve the route with highest fitness
+    Repeat the step above for the size of poolSize
+    '''
     for i in range(0, poolSize):
-        matingPool.append(population[np.random.choice(len(population), p=selection_probs)])
-    
+        randPop = random.sample(population, int(tournament_size))
+        best = randPop[0]
+        for i in range(0, len(randPop)):
+            if Fitness(randPop[i]).routeFitness() > Fitness(best).routeFitness():
+                best = randPop[i]
+        matingPool.append(best)
+        
     return matingPool
 
 
@@ -188,35 +193,48 @@ def survivorSelection(population, popRanked, eliteSize):
 
 
 def crossover(parent1, parent2):
-    ###Position-Based Crossover###
+    ###Davis’ Order Crossover (OX1)###
     child = [None] * len(parent1)
     
     #generate a random slice within the chromosome
-    geneA = int(random.random() * len(parent1))
-    geneB = int(random.random() * len(parent1))
+    gene1 = random.randint(0, len(parent1) - 1)
+    gene2 = random.randint(0, len(parent1) - 1)
     
     # check for identical genes i.e. gene1 == gene2
-    while geneA == geneB:
-        geneA = random.randint(0, len(parent1) - 1)
-        geneB = random.randint(0, len(parent1) - 1)
-
-    # sort the order
-    startGene = min(geneA, geneB)
-    endGene = max(geneA, geneB)
-
-    '''
-    First, copy the selected portion from parent1 to child
-    Second, copy the genes from parent2 to child which are not in the child
-    '''
-    for i in range(startGene, endGene + 1):
-        child[i] = parent2[i]
-        
-    temp = [gene for gene in parent1 if gene not in child and not None]
+    while gene1 == gene2:
+        gene1 = random.randint(0, len(parent1) - 1)
+        gene2 = random.randint(0, len(parent1) - 1)
     
-    count = 0
-    while None in child:
-        child[child.index(None)] = temp[count]
-        count += 1
+    # sort the order
+    startGene = min(gene1, gene2)
+    endGene = max(gene1, gene2)
+    
+    # get the slice of the parent 1 chromosome and put into the child
+    for i in range(startGene, endGene + 1):
+        child[i] = parent1[i]
+    
+    # copy remained unused genes from second parent to the child, wrapping around the list
+    count = endGene + 1#to indicate gene position in parent
+    childCount = endGene + 1#to indicate gene position in child
+    isComplete = False
+    while not isComplete:
+        if count == len(parent1):
+            count = 0
+        elif count == endGene:
+            if None in child:# presence of None indicates the child is not fully filled up with genes yet
+                if childCount == len(child):
+                        childCount = child.index(None)
+                if parent2[count] not in child:
+                    child[childCount] = parent2[count]
+            isComplete = True
+        else:
+            if parent2[count] not in child:# presence of None indicates the child is not fully filled up with genes yet
+                if None in child:
+                    if childCount == len(child):
+                        childCount = child.index(None)
+                    child[childCount] = parent2[count]
+                    childCount += 1
+            count += 1
     
     return child
 
@@ -244,12 +262,13 @@ def breedPopulation(matingpool, poolSize):
 
 
 def mutate(route):
-    ###Inverse Mutation###
-    portionLen = int(0.05 * len(route))
-
-    #get a random portion of a route and inverse that portion
+    ###Shuffle mutation###
+    portionLen = int(0.02 * len(route))
+    
+    #get a random portion of a route and shuffle that portion
     idx = random.randint(0, len(route) - portionLen)
-    route[idx : idx + portionLen] = reversed(route[idx : idx + portionLen])
+    portion = route[idx : idx + portionLen]
+    route[idx : idx + portionLen] = random.sample(portion, len(portion))    
     
     return route
 
@@ -275,8 +294,7 @@ def mutation(population):
 
 
 def oneGeneration(population, eliteSize):
-    
-    # First rank the chromosomes in the population
+    # First rank the routes i.e. chromosomes in the population
     popRanked = rankRoutes(population)
     
     # First we preserve the elites
@@ -307,17 +325,17 @@ def oneGeneration(population, eliteSize):
 
 
 start_time = time.time()
-'''
+
 filename = 'TSPdata/tsp-case04.txt'
-popSize = 40
-eliteSize = 10
-iteration_limit = 200
+popSize = 60
+eliteSize = 15
+iteration_limit = 300
 '''
 filename = 'TSPdata/tsp-case03.txt'
 popSize = 20
 eliteSize = 5
 iteration_limit = 100
-
+'''
 cityList = genCityList(filename)
 
 population = initialPopulation(popSize, cityList)
